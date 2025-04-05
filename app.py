@@ -7,8 +7,17 @@ import chainlit as cl  # importing chainlit for our app
 from chainlit.prompt import Prompt, PromptMessage  # importing prompt tools
 from chainlit.playground.providers import ChatOpenAI  # importing ChatOpenAI tools
 from dotenv import load_dotenv
+import logging
+import tiktoken
 
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialize tokenizer for GPT-3.5-turbo
+tokenizer = tiktoken.get_encoding("cl100k_base")
 
 # ChatOpenAI Templates
 system_template = """You are a helpful assistant who always speaks in a pleasant tone!
@@ -36,7 +45,6 @@ async def start_chat():
 @cl.on_message  # marks a function that should be run each time the chatbot receives a message from a user
 async def main(message: cl.Message):
     settings = cl.user_session.get("settings")
-
     client = AsyncOpenAI()
 
     print(message.content)
@@ -59,18 +67,28 @@ async def main(message: cl.Message):
         settings=settings,
     )
 
+    # Count tokens in the prompt messages
+    prompt_tokens = sum(len(tokenizer.encode(m.formatted)) for m in prompt.messages)
+    logger.info(f"Prompt tokens: {prompt_tokens}")
+    await cl.Message(content=f"Prompt tokens: {prompt_tokens}", author="System").send()
+
     print([m.to_openai() for m in prompt.messages])
 
     msg = cl.Message(content="")
+    response_content = ""
 
     # Call OpenAI
     async for stream_resp in await client.chat.completions.create(
         messages=[m.to_openai() for m in prompt.messages], stream=True, **settings
     ):
         token = stream_resp.choices[0].delta.content
-        if not token:
-            token = ""
-        await msg.stream_token(token)
+        if token is not None:
+            response_content += token
+            await msg.stream_token(token)
+
+    # Count tokens in the response
+    completion_tokens = len(tokenizer.encode(response_content))
+    total_tokens = prompt_tokens + completion_tokens
 
     # Update the prompt object with the completion
     prompt.completion = msg.content
@@ -78,3 +96,8 @@ async def main(message: cl.Message):
 
     # Send and close the message stream
     await msg.send()
+
+    # Log token usage statistics
+    usage_stats = f"Token Usage - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}"
+    logger.info(usage_stats)
+    await cl.Message(content=usage_stats, author="System").send()
