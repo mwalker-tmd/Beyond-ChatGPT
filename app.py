@@ -15,8 +15,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # System message template
-SYSTEM_MESSAGE = """You are a helpful assistant who always speaks in a pleasant tone!
-Think through your response step by step."""
+SYSTEM_MESSAGE = """You are a helpful assistant who always speaks in a pleasant tone!"""
 
 @cl.on_chat_start  # marks a function that will be executed at the start of a user session
 async def start_chat():
