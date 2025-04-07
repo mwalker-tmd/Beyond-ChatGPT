@@ -10,6 +10,6 @@ This Chainlit app was created following instructions from [this repository!](htt
 - **Implemented Prompt Enhancer (Proof of Concept)**:  
   Introduced a backend component that programmatically augments user prompts based on task type. This enhancement adds strategies like:
   - **Few-Shot prompting** for tone and rewriting tasks
-  - **Chain-of-Thought prompting** for logic and math problems  
-
+  - **Chain-of-Thought prompting** for logic and math problems
+  
   The system currently uses lightweight keyword-based classification to determine the task and apply the appropriate enhancement. The next phase would use an LLM to determine the task type.
